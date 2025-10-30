@@ -1,0 +1,82 @@
+import React from 'react';
+import { createSlice, configureStore } from '@reduxjs/toolkit';
+import { Provider, useSelector, useDispatch } from 'react-redux';
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState: { items: [] },
+  reducers: {
+    addToCart: (state, action) => {
+      const item = state.items.find(i => i.id === action.payload.id);
+      if (item) item.quantity += 1;
+      else state.items.push({ ...action.payload, quantity: 1 });
+    },
+    removeFromCart: (state, action) => {
+      state.items = state.items.filter(i => i.id !== action.payload);
+    },
+    updateQuantity: (state, action) => {
+      const { id, quantity } = action.payload;
+      const item = state.items.find(i => i.id === id);
+      if (item) item.quantity = quantity;
+    }
+  }
+});
+
+const { addToCart, removeFromCart, updateQuantity } = cartSlice.actions;
+const store = configureStore({ reducer: { cart: cartSlice.reducer } });
+
+const ProductList = () => {
+  const dispatch = useDispatch();
+  const products = [
+    { id: 1, name: 'Laptop', price: 800 },
+    { id: 2, name: 'Headphones', price: 150 },
+    { id: 3, name: 'Keyboard', price: 100 }
+  ];
+  return (
+    <div>
+      <h2>Products</h2>
+      {products.map(p => (
+        <div key={p.id} style={{ border: '1px solid #ccc', padding: 10, margin: 10 }}>
+          <h4>{p.name}</h4>
+          <p>${p.price}</p>
+          <button onClick={() => dispatch(addToCart(p))}>Add to Cart</button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const Cart = () => {
+  const items = useSelector(state => state.cart.items);
+  const dispatch = useDispatch();
+  return (
+    <div>
+      <h2>Cart</h2>
+      {items.length === 0 ? <p>No items in cart</p> :
+        items.map(i => (
+          <div key={i.id} style={{ border: '1px solid #ccc', padding: 10, margin: 10 }}>
+            <h4>{i.name}</h4>
+            <p>${i.price}</p>
+            <input
+              type="number"
+              value={i.quantity}
+              min="1"
+              onChange={e => dispatch(updateQuantity({ id: i.id, quantity: Number(e.target.value) }))}
+            />
+            <button onClick={() => dispatch(removeFromCart(i.id))}>Remove</button>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <Provider store={store}>
+      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 50 }}>
+        <ProductList />
+        <Cart />
+      </div>
+    </Provider>
+  );
+}
